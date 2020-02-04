@@ -3,6 +3,9 @@ package core;
 import java.io.*;
 import java.util.Arrays;
 
+import Exception.*;
+
+
 public class Reassembler {
 
     protected File file;
@@ -10,70 +13,71 @@ public class Reassembler {
     final int BUFFER_SIZE = 4096;
     final int METADATA_LENGTH = 14;
 
-    public Reassembler(File f){ file = f; }
-    // TODO: Fare controlli, nel costruttore???
+    public Reassembler(File f) throws FileMetadataError {
+        file = f;
+        if (!Utils.checkFileParts(f)) {
+            throw new FileMetadataError();
+        }
+    }
 
-    public void reassemble(){
-        try {
+    public void reassemble() throws Exception{
 
-            beforeReassemble();
+        beforeReassemble();
 
-            // Apre il file
-            FileInputStream i = new FileInputStream(file);
+        // Apre il file
+        FileInputStream i = new FileInputStream(file);
 
-            // Legge i metadati
-            byte[] metadataBytes = new byte[METADATA_LENGTH];
-            i.read(metadataBytes, 0, METADATA_LENGTH);
-            int totalParts = Integer.parseInt(new String(Arrays.copyOfRange(metadataBytes,3,6)));
+        // Legge i metadati
+        byte[] metadataBytes = new byte[METADATA_LENGTH];
+        i.read(metadataBytes, 0, METADATA_LENGTH);
+        int totalParts = Integer.parseInt(new String(Arrays.copyOfRange(metadataBytes,3,6)));
 
-            // Chiude il file
+        // Chiude il file
+        i.close();
+
+        // Calcola la stringa fino a file.part
+        String path = file.getAbsolutePath();
+        String partsPath = path.substring(0, path.length() - 1);
+
+        // Apre il nuovo file
+        File out = new File(Utils.getOnlyName(file));
+        FileOutputStream o = new FileOutputStream(out);
+
+        // Per ogni parte, la apre, legge i dati, li rimette a posto e la chiude
+        for(int j=0; j<totalParts; j++){
+            File part = new File(partsPath + j);
+            i = new FileInputStream(part);
+
+            // Remove metadata
+            i.skip(METADATA_LENGTH);
+
+            reassembleBuffers(part, i, o);
+
             i.close();
-
-            String path = file.getAbsolutePath();
-            String partsPath = path.substring(0, path.length() - 1);
-
-            // TODO: Farlo ritornare al nome originale
-            File out = new File(Utils.getDirectory(file), "output");
-            FileOutputStream o = new FileOutputStream(out);
-
-            for(int j=0; j<totalParts; j++){
-                File part = new File(partsPath + j);
-                i = new FileInputStream(part);
-
-                // Remove metadata
-                i.skip(METADATA_LENGTH);
-
-                reassembleBuffers(part, i, o);
-
-                i.close();
-            }
-            o.close();
-
-            afterReassemble();
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+        o.close();
+
+
     }
 
-    protected void reassembleBuffers(File part, FileInputStream i, FileOutputStream o){
-        try {
-            int partDimension = (int) part.length() - METADATA_LENGTH;
-            for (int bytesRemaned = partDimension; bytesRemaned > 0; bytesRemaned = bytesRemaned - BUFFER_SIZE) {
-                int currentRead = BUFFER_SIZE;
-                if (bytesRemaned < BUFFER_SIZE) currentRead = bytesRemaned;
+    protected void reassembleBuffers(File part, FileInputStream i, FileOutputStream o) throws Exception{
 
-                byte[] data = new byte[currentRead];
-                i.read(data, 0, currentRead);
-                data = processBytes(data);
-                o.write(data, 0, currentRead);
-            }
-        } catch (Exception e){
-            e.printStackTrace();
+        // Calcola la lunghezza dei byte da leggere
+        int partDimension = (int) part.length() - METADATA_LENGTH;
+
+        // Prende i byte a blocchi di BUFFER_SIZE alla volta e li scrive sulla destinazione
+        for (int bytesRemaned = partDimension; bytesRemaned > 0; bytesRemaned = bytesRemaned - BUFFER_SIZE) {
+            int currentRead = BUFFER_SIZE;
+            if (bytesRemaned < BUFFER_SIZE) currentRead = bytesRemaned;
+
+            byte[] data = new byte[currentRead];
+            i.read(data, 0, currentRead);
+            data = processBytes(data);
+            o.write(data, 0, currentRead);
         }
+
     }
 
-    protected void beforeReassemble() {}
-    protected byte[] processBytes(byte[] b) { return b; }
-    protected void afterReassemble() {}
+    protected void beforeReassemble() throws Exception {}
+    protected byte[] processBytes(byte[] b) throws Exception{ return b; }
 }

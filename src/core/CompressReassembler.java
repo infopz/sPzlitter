@@ -4,78 +4,79 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.zip.Inflater;
 
+import Exception.*;
+
+
 public class CompressReassembler extends Reassembler {
 
-    public CompressReassembler(File file) { super(file); }
+    public CompressReassembler(File file) throws Exception { super(file); }
 
     String[] bufferLength;
     int bufferLengthOffsett;
     int index = 0;
 
     @Override
-    protected void beforeReassemble() {
-        try {
+    protected void beforeReassemble() throws IOException{
 
-            RandomAccessFile i = new RandomAccessFile(file, "r");
-            i.seek(8);
-            byte[] bufferStringLength = new byte[6];
-            i.read(bufferStringLength,0,6);
-            bufferLengthOffsett = Integer.parseInt(new String(bufferStringLength));
-
-            i.seek(file.length()-bufferLengthOffsett);
-            byte[] bufferLenghtByte = new byte[bufferLengthOffsett];
-            i.read(bufferLenghtByte);
-            i.close();
-            bufferLength = new String(bufferLenghtByte).split(";");
-
-        } catch (Exception e){
-            e.printStackTrace();
-        }
+        // Apre la prima parte
+        RandomAccessFile i = new RandomAccessFile(file, "r");
+        i.seek(8);
+        // Legge la lunghezza della stringa dei buffer
+        byte[] bufferStringLength = new byte[6];
+        i.read(bufferStringLength,0,6);
+        bufferLengthOffsett = Integer.parseInt(new String(bufferStringLength));
+        // Salta tutta la parte dei dati
+        i.seek(file.length()-bufferLengthOffsett);
+        // Legge la stringa dei buffer e la memorizza
+        byte[] bufferLenghtByte = new byte[bufferLengthOffsett];
+        i.read(bufferLenghtByte);
+        i.close();
+        bufferLength = new String(bufferLenghtByte).split(";");
 
     }
 
     @Override
-    protected void reassembleBuffers(File part, FileInputStream i, FileOutputStream o) {
-        try{
-            int partDimension = (int) part.length() - METADATA_LENGTH;
-            if (index==0) partDimension = partDimension-bufferLengthOffsett;
+    protected void reassembleBuffers(File part, FileInputStream i, FileOutputStream o) throws IOException, CompressException {
 
-            System.out.println("\nPARTDIMENSION: "+partDimension);
+        // Calcola la dimensione della parte corrente
+        int partDimension = (int) part.length() - METADATA_LENGTH;
+        if (index==0) partDimension = partDimension-bufferLengthOffsett;
 
+        // Per ogni parte, fa tanti cicli per ogni buffer da leggere
+        for(int bytesRemaned = partDimension; bytesRemaned>0;){
+            // Calcola la dimensione del buffer corrente
             int currentBuffer = Integer.parseInt(bufferLength[index]);
-            for(int bytesRemaned = partDimension; bytesRemaned>0;){
-                bytesRemaned = bytesRemaned - currentBuffer;
-                System.out.println("REMANED: " + bytesRemaned);
-                byte[] compressedData = new byte[currentBuffer];
-                i.read(compressedData,0, currentBuffer);
-                byte[] data = processBytes(compressedData);
-                o.write(data, 0, data.length);
+            bytesRemaned = bytesRemaned - currentBuffer;
 
-                index++;
-                if (index!=bufferLength.length) currentBuffer = Integer.parseInt(bufferLength[index]);
-            }
+            // Legge, processa e scrive i dati di un buffer
+            byte[] compressedData = new byte[currentBuffer];
+            i.read(compressedData,0, currentBuffer);
+            byte[] data = processBytes(compressedData);
+            o.write(data, 0, data.length);
+            index++;
 
-        } catch (Exception e){
-            e.printStackTrace();
         }
+
     }
 
     @Override
-    protected byte[] processBytes(byte[] b) {
-        try {
+    protected byte[] processBytes(byte[] b) throws CompressException {
 
+            // Inizializza il decompressore
             Inflater decompresser = new Inflater();
             decompresser.setInput(b, 0, b.length);
-            //FIXME: cambiare la dimensione
+
+            // Decomprime i dati
             byte[] result = new byte[BUFFER_SIZE*2];
-            int resultLength = decompresser.inflate(result);
+            int resultLength;
+            try {
+                resultLength = decompresser.inflate(result);
+            } catch (Exception e) { throw new CompressException();}
             decompresser.end();
 
+            // Rimette a posto la dimensione dell'array
             result = Arrays.copyOfRange(result, 0, resultLength);
             return result;
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        return b;
+
     }
 }

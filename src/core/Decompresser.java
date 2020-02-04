@@ -3,15 +3,12 @@ package core;
 import javax.crypto.Cipher;
 import java.io.*;
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.Base64.*;
 import java.util.zip.*;
 import java.security.*;
-import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 
 public class Decompresser {
-    //TODO: ClassMetadata?
+
     public static void back(File f){
         try {
             File file = new File(f.getAbsolutePath()+".part0");

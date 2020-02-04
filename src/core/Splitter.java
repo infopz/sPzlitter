@@ -24,8 +24,7 @@ public class Splitter {
         dim = Utils.dimCalc(file, nParts);
     }
 
-    public void split(){
-        try {
+    public void split() throws Exception{
 
             beforeSplitting();
 
@@ -70,24 +69,16 @@ public class Splitter {
 
             afterSplitting();
 
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
-    protected void beforeSplitting() {}
+    protected void beforeSplitting() throws Exception {}
 
-    protected byte[] processBytes(byte[] b) { return b; }
+    protected byte[] processBytes(byte[] b) throws Exception{ return b; }
 
-    protected void afterSplitting() {}
+    protected void afterSplitting() throws Exception {}
 
-    protected void writeMetadata(FileOutputStream o, int currentPart) {
-        try {
+    protected void writeMetadata(FileOutputStream o, int currentPart) throws IOException {
             String metadata = String.format("%03d", currentPart) + String.format("%03d", nParts) + "00" + "000000";
             o.write(metadata.getBytes());
-        } catch (Exception e){
-            e.printStackTrace();
-        }
     }
 }
