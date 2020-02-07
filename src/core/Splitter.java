@@ -5,7 +5,7 @@ import java.io.*;
 public class Splitter {
 
     protected File file;
-    protected int dim;
+    protected long dim;
     protected int nParts;
 
     final int BUFFER_SIZE = 4096;
@@ -13,6 +13,10 @@ public class Splitter {
     public Splitter(File f) {
         file = f;
     }
+
+    public int getStatus() { return 0; }
+
+    public String getFile() { return file.getAbsolutePath(); }
 
     public void setDim(int dim){
         this.dim = dim;
@@ -33,7 +37,7 @@ public class Splitter {
             FileInputStream i = new FileInputStream(sourcePath);
 
             // Ne calcola la dimensione e prepara il buffer
-            int totalRemaning = (int) file.length();
+            long totalRemaning = file.length();
             byte[] bytes;
 
             // Ogni giro scrive una parte diversa
@@ -46,15 +50,15 @@ public class Splitter {
                 writeMetadata(o, j);
 
                 // Calcola la dimensione di quella parte
-                int destinationSize = dim;
+                long destinationSize = dim;
                 if (totalRemaning < dim) destinationSize = totalRemaning;
 
                 System.out.println("\nPART SIZE: " + destinationSize);
 
                 // A letture della lunghezza di BUFFER_SIZE, legge dal sorgente e scrive sulla destinazione
-                for(int bytesRemaning = destinationSize; bytesRemaning>0; bytesRemaning = bytesRemaning - BUFFER_SIZE){
+                for(long bytesRemaning = destinationSize; bytesRemaning>0; bytesRemaning = bytesRemaning - BUFFER_SIZE){
                     int readSize = BUFFER_SIZE;
-                    if (bytesRemaning<BUFFER_SIZE) readSize = bytesRemaning;
+                    if (bytesRemaning<BUFFER_SIZE) readSize = (int) bytesRemaning;
 
                     System.out.println("BLOCK SIZE: " + bytesRemaning + " " + readSize);
                     bytes = new byte[readSize];
@@ -78,7 +82,8 @@ public class Splitter {
     protected void afterSplitting() throws Exception {}
 
     protected void writeMetadata(FileOutputStream o, int currentPart) throws IOException {
-            String metadata = String.format("%03d", currentPart) + String.format("%03d", nParts) + "00" + "000000";
+            String metadata = String.format("%03d", currentPart) + String.format("%03d", nParts) + "00" + "00000000";
             o.write(metadata.getBytes());
     }
+
 }

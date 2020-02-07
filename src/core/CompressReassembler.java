@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.zip.Inflater;
 
-import Exception.*;
+import exception.*;
 
 
 public class CompressReassembler extends Reassembler {
@@ -22,8 +22,8 @@ public class CompressReassembler extends Reassembler {
         RandomAccessFile i = new RandomAccessFile(file, "r");
         i.seek(8);
         // Legge la lunghezza della stringa dei buffer
-        byte[] bufferStringLength = new byte[6];
-        i.read(bufferStringLength,0,6);
+        byte[] bufferStringLength = new byte[8];
+        i.read(bufferStringLength,0,8);
         bufferLengthOffsett = Integer.parseInt(new String(bufferStringLength));
         // Salta tutta la parte dei dati
         i.seek(file.length()-bufferLengthOffsett);
@@ -39,11 +39,11 @@ public class CompressReassembler extends Reassembler {
     protected void reassembleBuffers(File part, FileInputStream i, FileOutputStream o) throws IOException, CompressException {
 
         // Calcola la dimensione della parte corrente
-        int partDimension = (int) part.length() - METADATA_LENGTH;
+        long partDimension = part.length() - METADATA_LENGTH;
         if (index==0) partDimension = partDimension-bufferLengthOffsett;
 
         // Per ogni parte, fa tanti cicli per ogni buffer da leggere
-        for(int bytesRemaned = partDimension; bytesRemaned>0;){
+        for(long bytesRemaned = partDimension; bytesRemaned>0;){
             // Calcola la dimensione del buffer corrente
             int currentBuffer = Integer.parseInt(bufferLength[index]);
             bytesRemaned = bytesRemaned - currentBuffer;

@@ -3,7 +3,7 @@ package core;
 import java.io.*;
 import java.util.Arrays;
 
-import Exception.*;
+import exception.*;
 
 
 public class Reassembler {
@@ -11,7 +11,7 @@ public class Reassembler {
     protected File file;
 
     final int BUFFER_SIZE = 4096;
-    final int METADATA_LENGTH = 14;
+    final int METADATA_LENGTH = 16;
 
     public Reassembler(File f) throws FileMetadataError {
         file = f;
@@ -19,6 +19,9 @@ public class Reassembler {
             throw new FileMetadataError();
         }
     }
+
+    public int getStatus() { return 0; }
+    public String getFile() { return file.getAbsolutePath(); }
 
     public void reassemble() throws Exception{
 
@@ -56,19 +59,17 @@ public class Reassembler {
             i.close();
         }
         o.close();
-
-
     }
 
     protected void reassembleBuffers(File part, FileInputStream i, FileOutputStream o) throws Exception{
 
         // Calcola la lunghezza dei byte da leggere
-        int partDimension = (int) part.length() - METADATA_LENGTH;
+        long partDimension =  part.length() - METADATA_LENGTH;
 
         // Prende i byte a blocchi di BUFFER_SIZE alla volta e li scrive sulla destinazione
-        for (int bytesRemaned = partDimension; bytesRemaned > 0; bytesRemaned = bytesRemaned - BUFFER_SIZE) {
+        for (long bytesRemaned = partDimension; bytesRemaned > 0; bytesRemaned = bytesRemaned - BUFFER_SIZE) {
             int currentRead = BUFFER_SIZE;
-            if (bytesRemaned < BUFFER_SIZE) currentRead = bytesRemaned;
+            if (bytesRemaned < BUFFER_SIZE) currentRead = (int) bytesRemaned;
 
             byte[] data = new byte[currentRead];
             i.read(data, 0, currentRead);

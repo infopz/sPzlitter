@@ -42,7 +42,7 @@ public class CompressSplitter extends Splitter {
         RandomAccessFile f = new RandomAccessFile(firstPart, "rw");
         f.seek(8);
         // Scrive il numero di byte della stringa con i buffer
-        String bufferStringLength = String.format("%06d", buffersDimensions.getBytes().length);
+        String bufferStringLength = String.format("%08d", buffersDimensions.getBytes().length);
         f.write(bufferStringLength.getBytes());
         f.close();
 
@@ -51,7 +51,7 @@ public class CompressSplitter extends Splitter {
 
     @Override
     protected void writeMetadata(FileOutputStream o, int currentPart) throws IOException{
-        String metadata = String.format("%03d", currentPart) + String.format("%03d", nParts) + "10" + "000000";
+        String metadata = String.format("%03d", currentPart) + String.format("%03d", nParts) + "10" + "00000000";
         o.write(metadata.getBytes());
 
     }
